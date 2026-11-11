@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#06323d">
+<title>Maldivian Fishery Tycoon — Stage 1 Test Build</title>
+<style>
+:root{
+  --deep:#052b35; --lagoon:#0a6f80; --turq:#1cc8c0; --foam:#d8f6f2;
+  --sand:#fff8ea; --sand2:#f3e7cd; --ink:#11343b; --mute:#5d7b80;
+  --coral:#ff6a4d; --coral2:#e24f33; --gold:#f4b82e; --pearl:#c9b8ff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--deep);overscroll-behavior:none}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);
+  touch-action:manipulation;user-select:none;-webkit-user-select:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0;touch-action:manipulation}
+#app{max-width:460px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;
+  background:linear-gradient(180deg,#0b7f90 0%,#075462 38%,#053541 100%);position:relative;overflow:hidden}
+
+/* HUD */
+header{padding:calc(8px + env(safe-area-inset-top)) 12px 8px;color:#fff;flex:none}
+.hud{display:flex;align-items:center;gap:8px}
+.money{flex:1;min-width:0}
+.money .big{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.05;white-space:nowrap}
+.money .big small{font-size:13px;font-weight:700;color:var(--gold);margin-left:4px;letter-spacing:.5px}
+.money .rate{font-size:12px;color:var(--foam);opacity:.85}
+.pill{background:rgba(255,255,255,.13);border-radius:999px;padding:7px 12px;font-weight:700;font-size:14px;white-space:nowrap}
+.pill.boost{background:var(--coral);display:none}
+.pill.boost.on{display:block}
+.hint{margin-top:8px;background:rgba(0,0,0,.22);border-radius:10px;padding:7px 10px;font-size:13px;color:var(--foam);min-height:31px}
+
+/* panels */
+main{flex:1;min-height:0;position:relative}
+.panel{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 12px 16px;display:none}
+.panel.on{display:block}
+h2{color:#fff;font-size:13px;letter-spacing:1.2px;text-transform:uppercase;margin:16px 2px 8px;opacity:.85}
+.note{color:var(--foam);font-size:12.5px;opacity:.8;margin:0 2px 8px;line-height:1.4}
+
+/* sea scene */
+.sea{height:58px;border-radius:14px;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#8fe3ee 0%,#8fe3ee 38%,#1fb7c4 38%,#0f8ea0 100%)}
+.sea .isle{position:absolute;left:6px;top:6px;font-size:30px}
+.sea .boat{position:absolute;top:10px;left:0;font-size:26px;will-change:transform}
+.sea .shoal{position:absolute;right:10px;top:26px;font-size:16px;opacity:.9}
+.inv{display:flex;gap:6px;margin:8px 0 2px}
+.inv div{flex:1;background:rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:5px 2px;text-align:center;font-size:12px;font-weight:700;min-width:0}
+.inv span{display:block;font-size:9.5px;font-weight:600;opacity:.75;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.modes{display:flex;gap:6px;justify-content:flex-end;margin:10px 0 8px}
+.modes button{background:rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700}
+.modes button.on{background:var(--turq);color:var(--deep)}
+
+/* station cards */
+.card{display:flex;gap:8px;margin-bottom:8px}
+.tap{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:var(--sand);border-radius:14px;padding:10px;text-align:left;
+  box-shadow:0 3px 0 var(--sand2);transition:transform .05s}
+.tap:active{transform:translateY(2px);box-shadow:0 1px 0 var(--sand2)}
+.ico{font-size:30px;width:46px;height:46px;border-radius:12px;background:var(--foam);display:flex;align-items:center;justify-content:center;flex:none}
+.info{flex:1;min-width:0}
+.nm{font-weight:800;font-size:15px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.nm .lv{font-size:11px;background:var(--ink);color:#fff;border-radius:6px;padding:1px 6px;font-weight:700}
+.nm .auto{font-size:9px;background:var(--turq);color:var(--deep);border-radius:6px;padding:2px 5px;font-weight:800;display:none}
+.card.auto .nm .auto{display:inline}
+.flow{font-size:11.5px;color:var(--mute);margin:2px 0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:9px;background:var(--sand2);border-radius:5px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--turq),#12a3b5);border-radius:5px}
+.card.idle .bar i{background:#c9bfa6}
+.up{width:92px;flex:none;background:var(--coral);color:#fff;border-radius:14px;box-shadow:0 3px 0 var(--coral2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px}
+.up:active{transform:translateY(2px);box-shadow:0 1px 0 var(--coral2)}
+.up small{font-size:10.5px;font-weight:700;opacity:.9}
+.up b{font-size:15px}
+.up em{font-style:normal;font-size:9.5px;opacity:.85}
+.no{filter:grayscale(.75);opacity:.55}
+.card.locked .tap{opacity:.6}
+
+/* list rows (staff / shop) */
+.row{display:flex;align-items:center;gap:10px;background:var(--sand);border-radius:14px;padding:10px;margin-bottom:8px}
+.row .ico{background:var(--foam)}
+.row .tx{flex:1;min-width:0}
+.row .tx b{display:block;font-size:14.5px}
+.row .tx span{display:block;font-size:12px;color:var(--mute);line-height:1.3}
+.btn{flex:none;min-width:86px;background:var(--coral);color:#fff;border-radius:12px;padding:10px 8px;font-weight:800;font-size:13.5px;box-shadow:0 3px 0 var(--coral2);text-align:center}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--coral2)}
+.btn.pearl{background:#7a5cf0;box-shadow:0 3px 0 #5a3fd0}
+.btn.ad{background:#1a9c5b;box-shadow:0 3px 0 #127443}
+.btn.done{background:#b9c9c4;box-shadow:none;color:var(--ink)}
+.btn.ghost{background:rgba(255,255,255,.14);box-shadow:none}
+.btn.wide{display:block;width:100%;padding:14px;font-size:16px;margin-top:10px}
+
+/* goal */
+.goal{background:var(--sand);border-radius:16px;padding:16px;text-align:center}
+.goal .isl{font-size:54px}
+.goal h3{margin:6px 0 4px;font-size:18px}
+.goal p{margin:0 0 12px;font-size:13px;color:var(--mute);line-height:1.4}
+.goal .bar{height:14px}
+.stats{color:var(--foam);font-size:13px;line-height:1.9;margin:0 2px}
+.stats b{color:#fff;float:right}
+
+/* nav */
+nav{flex:none;display:flex;background:var(--deep);padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:4px;box-shadow:0 -6px 16px rgba(0,0,0,.25)}
+nav button{flex:1;color:#9fc4c8;padding:8px 0 6px;border-radius:12px;font-size:11px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+nav button span{font-size:22px;line-height:1}
+nav button.on{background:rgba(28,200,192,.16);color:#fff}
+nav .dot{position:absolute;top:5px;right:24%;width:9px;height:9px;border-radius:50%;background:var(--coral);display:none}
+nav button.alert .dot{display:block}
+
+/* modal + toast + floaters */
+#modal{position:absolute;inset:0;background:rgba(3,25,31,.78);display:none;align-items:center;justify-content:center;padding:24px;z-index:20}
+#modal.on{display:flex}
+#modal .box{background:var(--sand);border-radius:20px;padding:22px 18px;width:100%;text-align:center}
+#modal .box .e{font-size:50px}
+#modal h3{margin:6px 0;font-size:20px}
+#modal p{margin:0 0 6px;font-size:14px;color:var(--mute);line-height:1.45}
+#modal .amt{font-size:28px;font-weight:800;color:var(--ink);margin:6px 0}
+#toast{position:absolute;left:12px;right:12px;bottom:86px;z-index:15;pointer-events:none;display:flex;flex-direction:column;gap:6px;align-items:center}
+#toast div{background:rgba(5,30,36,.94);color:#fff;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:600;animation:tin 2.6s forwards;text-align:center}
+@keyframes tin{0%{opacity:0;transform:translateY(8px)}8%,85%{opacity:1;transform:none}100%{opacity:0}}
+.fly{position:absolute;left:14px;top:calc(34px + env(safe-area-inset-top));color:var(--gold);font-weight:800;font-size:15px;pointer-events:none;animation:fly .9s forwards;z-index:5;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+@keyframes fly{0%{opacity:0;transform:translate(120px,26px)}20%{opacity:1}100%{opacity:0;transform:translate(120px,-6px)}}
+.demo{position:absolute;top:calc(4px + env(safe-area-inset-top));right:50%;transform:translateX(50%);font-size:9px;letter-spacing:1px;color:#fff;opacity:.45;font-weight:700}
+
+.goalstrip{margin-top:8px;height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden}
+.goalstrip i{display:block;height:100%;width:0;background:var(--gold)}
+.goallbl{font-size:10.5px;color:var(--foam);opacity:.8;margin-top:3px;display:flex;justify-content:space-between}
+.gear{font-size:20px;padding:4px 6px}
+.goalcard{background:var(--sand);border-radius:14px;padding:14px;text-align:center;margin-top:14px}
+.goalcard .isl{font-size:40px}
+.goalcard h3{margin:4px 0;font-size:16px}
+.goalcard p{margin:0 0 8px;font-size:12.5px;color:var(--mute);line-height:1.4}
+#modal .stats{color:var(--ink);text-align:left;margin:10px 0}
+#modal .stats b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="demo">STAGE 1 TEST BUILD</div>
+  <header>
+    <div class="hud">
+      <div class="money">
+        <div class="big"><span id="h-mvr">0</span><small>rf</small></div>
+        <div class="rate">Idle income <span id="h-rate">0</span> rf/s</div>
+      </div>
+      <div class="pill boost" id="h-boost">🌶️ x2</div>
+      <div class="pill">💎 <span id="h-pearl">0</span></div>
+      <button class="gear" data-a="settings" aria-label="Settings">⚙️</button>
+    </div>
+    <div class="goalstrip"><i id="h-goal"></i></div>
+    <div class="goallbl"><span>Stage 1: Local Island</span><span id="h-goaltx"></span></div>
+    <div class="hint" id="h-hint"></div>
+  </header>
+
+  <main>
+    <section class="panel on" id="p-island">
+      <div class="sea"><div class="isle">🏝️</div><div class="shoal">🐟🐟</div><div class="boat" id="boat">⛵</div></div>
+      <div class="inv">
+        <div><b id="i-tuna">0</b><span>🐟 Raw tuna</span></div>
+        <div><b id="i-loin">0</b><span>🔪 Loins</span></div>
+        <div><b id="i-broth">0</b><span>💧 Tuna broth</span></div>
+        <div><b id="i-sold">0</b><span>🏪 Sold</span></div>
+      </div>
+      <div class="modes" id="modes">
+        <button data-a="mode" data-v="1">x1</button><button data-a="mode" data-v="10">x10</button><button data-a="mode" data-v="max">MAX</button>
+      </div>
+      <div id="cards"></div>
+      <div class="goalcard" id="goalcard"></div>
+    </section>
+    <section class="panel" id="p-upgrades"></section>
+    <section class="panel" id="p-staff"></section>
+    <section class="panel" id="p-shop"></section>
+  </main>
+
+  <nav>
+    <button data-a="tab" data-v="island" class="on"><span>🏝️</span>Island</button>
+    <button data-a="tab" data-v="upgrades"><span>🛠️</span>Upgrades<i class="dot"></i></button>
+    <button data-a="tab" data-v="staff"><span>👨‍🍳</span>Staff<i class="dot"></i></button>
+    <button data-a="tab" data-v="shop"><span>💎</span>Shop</button>
+  </nav>
+
+  <div id="toast"></div>
+  <div id="modal"><div class="box" id="mbox"></div></div>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Maldivian Fishery Tycoon — Stage 1 test build
+   Single file, no dependencies. Numbers follow the Master GDD; values
+   the GDD leaves open are marked [TUNED]. Game logic is kept apart from
+   the DOM so it can be simulated headless (window.__MFT).
+   ===================================================================== */
+
+/* ---------- tuning constants ---------- */
+// t = cycle seconds, val = rf per unit sold, unlock / sup = GDD costs, base = level-1 upgrade cost [TUNED]
+const DEF = {
+  dhoni: {n:'Dhoni Fishing',        ico:'⛵', t:3, val:10,  unlock:0,     base:60,   sup:500,   supN:'Dhoni Captain',     out:'raw tuna'},
+  cut:   {n:'Cutting Station',      ico:'🔪', t:2, val:25,  unlock:100,   base:300,   sup:2000,  supN:'Fish Cutter (Kuda)', out:'clean loins'},
+  smoke: {n:'Smoking (Valhoamas)',  ico:'🔥', t:4, val:120, unlock:1200,  base:2500,  sup:10000, supN:'Smoke Master',      out:'Valhoamas'},
+  pot:   {n:'Simmering (Rihaakuru)',ico:'🍲', t:8, val:600, unlock:15000, base:25000, sup:50000, supN:'Rihaakuru Cook',    out:'Rihaakuru'}
+};
+const ORDER = ['dhoni','cut','smoke','pot'];
+const GROWTH = 1.15;                 // GDD: Cost(L) = Base x 1.15^L
+const MILE_STEP = 25;                // GDD: multiplier = 2^floor(L/25)
+const MILE_PEARLS = 10;              // [TUNED] pearls per milestone
+const BROTH_PER_RIHA = 4;            // [TUNED] smoked loins' broth needed per Rihaakuru jar
+const TAP_BOOST = 0.15;              // [TUNED] fraction of a cycle per extra tap
+const VESSELS = [                    // [TUNED] rf vessel tiers from the original brief
+  {n:'Hand-line Dhoni',              m:1, cost:0},
+  {n:'Mas Dhoni',                    m:2, cost:25000},
+  {n:'Modern Pole-and-Line Vessel',  m:4, cost:300000}
+];
+const QUALITY_COST = [20000, 250000], QUALITY_MULT = 1.5;   // [TUNED] price x1.5 per tier
+const SUPERVISOR = {n:'Island Supervisor', cost:150000, speed:1.25, offlineCap:2*3600}; // GDD
+const ISLAND_PRICE = 500000;         // GDD Stage 1 goal
+const OFFLINE_RATE = 0.5, OFFLINE_MIN = 60;                // [TUNED]
+const BOOST_SECS = 60, AD_COOLDOWN = 120;                  // [TUNED]
+const SHOP = { golden:300, crate:100, crateUnits:500, warp2:50, warp24:350 };   // GDD pearl prices
+const BUNDLES = [[100,15],[550,75],[1200,150],[3000,350]];                       // GDD pearls / rf price
+const START_PEARLS = 20;
+const SAVE_KEY = 'mft_stage1_v2';
+
+/* ---------- state ---------- */
+function fresh(){
+  const st = {};
+  ORDER.forEach(id => st[id] = {lvl: DEF[id].unlock ? 0 : 1, prog:0, run:false, auto:false, batch:0});
+  return {mvr:0, pearls:START_PEARLS, total:0, st, inv:{tuna:0,loin:0,broth:0},
+          supervisor:false, golden:false, vessel:0, quality:0, boostUntil:0, adReadyAt:0, last:Date.now(),
+          won:false, mode:'1', claimed:{}, sold:0, trips:0};
+}
+let S = fresh();
+let now = () => Date.now();
+
+/* ---------- formulas ---------- */
+const miles    = l => Math.floor(l / MILE_STEP);
+const nextMile = l => (miles(l) + 1) * MILE_STEP;
+const boosted  = () => now() < S.boostUntil;
+const priceMult= () => Math.pow(QUALITY_MULT, S.quality);
+const unlocked = id => S.st[id].lvl > 0;
+function qty(id){                       // units per cycle
+  const s = S.st[id]; if (s.lvl < 1) return 0;
+  let q = s.lvl * Math.pow(2, miles(s.lvl));
+  if (id === 'dhoni') q *= VESSELS[S.vessel].m * (S.golden ? 2 : 1);
+  return q;
+}
+function dur(id, noBoost){              // seconds per cycle
+  return DEF[id].t / ((S.supervisor ? SUPERVISOR.speed : 1) * (!noBoost && boosted() ? 2 : 1));
+}
+function lvlCost(id, l){ return Math.ceil(DEF[id].base * Math.pow(GROWTH, l - 1)); }  // level l -> l+1
+function bulk(id){                      // {n, cost} for the current buy mode
+  const s = S.st[id]; let n = 0, cost = 0;
+  if (S.mode === 'max'){
+    while (n < 500){ const c = lvlCost(id, s.lvl + n); if (cost + c > S.mvr) break; cost += c; n++; }
+    if (n === 0){ n = 1; cost = lvlCost(id, s.lvl); }
+  } else { n = +S.mode; for (let i = 0; i < n; i++) cost += lvlCost(id, s.lvl + i); }
+  return {n, cost};
+}
+/* Steady-state income of the chain in rf/s.
+   autoOnly: only stations with staff count (idle and offline income). */
+function income(autoOnly, noBoost){
+  const r = id => (unlocked(id) && (!autoOnly || S.st[id].auto)) ? qty(id) / dur(id, noBoost) : 0;
+  const pm = priceMult(), fish = r('dhoni');
+  if (!unlocked('cut')) return fish * DEF.dhoni.val * pm;
+  const cut = Math.min(fish, r('cut'));
+  if (!unlocked('smoke')) return cut * DEF.cut.val * pm;
+  const smk = Math.min(cut, r('smoke'));
+  let inc = smk * DEF.smoke.val;
+  if (unlocked('pot')) inc += Math.min(smk / BROTH_PER_RIHA, r('pot')) * DEF.pot.val;
+  return inc * pm;
+}
+
+/* ---------- simulation ---------- */
+function tryStart(id){
+  const s = S.st[id], I = S.inv, q = qty(id);
+  if (s.lvl < 1 || s.run) return false;
+  let b = 0;
+  if (id === 'dhoni') b = q;
+  else if (id === 'cut'){ b = Math.min(q, Math.floor(I.tuna)); I.tuna -= b; }
+  else if (id === 'smoke'){ b = Math.min(q, Math.floor(I.loin)); I.loin -= b; }
+  else if (id === 'pot'){ b = Math.min(q, Math.floor(I.broth / BROTH_PER_RIHA)); I.broth -= b * BROTH_PER_RIHA; }
+  if (b < 1) return false;
+  s.batch = b; s.run = true; s.prog = 0;
+  return true;
+}
+function sell(id, units){ const v = units * DEF[id].val * priceMult(); S.mvr += v; S.total += v; S.sold += units; onSale(v); }
+function complete(id){
+  const s = S.st[id], I = S.inv, b = s.batch;
+  // goods move to the next station if it is unlocked, otherwise the local market buys them
+  if (id === 'dhoni'){ S.trips++; if (unlocked('cut')) I.tuna += b; else sell('dhoni', b); }
+  else if (id === 'cut'){ if (unlocked('smoke')) I.loin += b; else sell('cut', b); }
+  else if (id === 'smoke'){ sell('smoke', b); if (unlocked('pot')) I.broth += b; }
+  else if (id === 'pot') sell('pot', b);
+  s.run = false; s.prog = 0; s.batch = 0;
+}
+function step(dt){
+  for (const id of ORDER){
+    const s = S.st[id];
+    if (!s.run && s.auto) tryStart(id);
+    if (s.run){
+      s.prog += dt / dur(id);
+      if (s.prog >= 1){ complete(id); if (s.auto) tryStart(id); }
+    }
+  }
+}
+
+/* ---------- actions (return true on success) ---------- */
+let onSale = () => {}, toast = () => {}, dirty = true;
+function tapStation(id){
+  const s = S.st[id];
+  if (s.lvl < 1) return buyLevel(id);
+  if (s.run){ s.prog += TAP_BOOST; return true; }
+  if (tryStart(id)) return true;
+  toast({cut:'No raw tuna on shore. Send the dhoni out.', smoke:'No loins yet. Cut some tuna first.',
+         pot:'Needs ' + BROTH_PER_RIHA + ' tuna broth. Smoking makes broth.'}[id] || '');
+  return false;
+}
+function buyLevel(id){
+  const s = S.st[id];
+  if (s.lvl < 1){
+    if (S.mvr < DEF[id].unlock) return toast('Need ' + fmt(DEF[id].unlock) + ' rf'), false;
+    S.mvr -= DEF[id].unlock; s.lvl = 1;
+    // stock that was waiting for the market now feeds the new station
+    dirty = true; toast(DEF[id].n + ' unlocked!'); return true;
+  }
+  const b = bulk(id);
+  if (S.mvr < b.cost) return false;
+  S.mvr -= b.cost; s.lvl += b.n;
+  for (let m = MILE_STEP; m <= s.lvl; m += MILE_STEP){ const k = id + m;
+    if (!S.claimed[k]){ S.claimed[k] = 1; S.pearls += MILE_PEARLS; toast('🎉 ' + DEF[id].n + ' Lv ' + m + ': output x2, +' + MILE_PEARLS + ' pearls'); } }
+  dirty = true; return true;
+}
+function hireStaff(id){
+  const s = S.st[id];
+  if (s.auto || s.lvl < 1 || S.mvr < DEF[id].sup) return false;
+  S.mvr -= DEF[id].sup; s.auto = true; dirty = true; toast(DEF[id].supN + ' hired. ' + DEF[id].n + ' now runs itself.'); return true;
+}
+function hireSupervisor(){
+  if (S.supervisor || S.mvr < SUPERVISOR.cost) return false;
+  S.mvr -= SUPERVISOR.cost; S.supervisor = true; dirty = true; toast('Island Supervisor hired: +25% speed, offline earnings on.'); return true;
+}
+function buyVessel(){
+  const v = VESSELS[S.vessel + 1];
+  if (!v || S.mvr < v.cost) return false;
+  S.mvr -= v.cost; S.vessel++; dirty = true; toast('New vessel: ' + v.n); return true;
+}
+function buyQuality(){
+  const c = QUALITY_COST[S.quality];
+  if (c === undefined || S.mvr < c) return false;
+  S.mvr -= c; S.quality++; dirty = true; toast('Quality up. All prices x' + priceMult().toFixed(2)); return true;
+}
+function buyGolden(){
+  if (S.golden || S.pearls < SHOP.golden) return false;
+  S.pearls -= SHOP.golden; S.golden = true; dirty = true; toast('Golden Maldivian Dhoni: catch x2 forever.'); return true;
+}
+function buyCrate(){
+  if (S.pearls < SHOP.crate) return false;
+  S.pearls -= SHOP.crate;
+  if (unlocked('cut')) S.inv.tuna += SHOP.crateUnits; else sell('dhoni', SHOP.crateUnits);
+  dirty = true; toast('Crate delivered: +' + SHOP.crateUnits + ' raw tuna.'); return true;
+}
+function warpValue(h){ return income(true, true) * h * 3600; }
+function buyWarp(h){
+  const p = +h === 2 ? SHOP.warp2 : SHOP.warp24;
+  if (S.pearls < p) return false;
+  const v = warpValue(+h);
+  if (v <= 0) return toast('Hire staff first. Time warps pay idle income.'), false;
+  S.pearls -= p; S.mvr += v; S.total += v; dirty = true; toast('⏩ +' + fmt(v) + ' rf'); return true;
+}
+function startBoost(){ S.boostUntil = now() + BOOST_SECS * 1000; S.adReadyAt = now() + AD_COOLDOWN * 1000; dirty = true; }
+function buyIsland(){
+  if (S.won || S.mvr < ISLAND_PRICE) return false;
+  S.mvr -= ISLAND_PRICE; S.won = true; dirty = true; return true;
+}
+function offlineEarnings(secs){
+  if (!S.supervisor || secs < OFFLINE_MIN) return 0;
+  return income(true, true) * Math.min(secs, SUPERVISOR.offlineCap) * OFFLINE_RATE;
+}
+
+/* ---------- helpers ---------- */
+function fmt(n){
+  if (n < 1000) return String(Math.floor(n));
+  const u = ['K','M','B','T','Qa','Qi']; let i = -1;
+  while (n >= 1000 && i < u.length - 1){ n /= 1000; i++; }
+  return (n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2)) + u[i];
+}
+function fmtTime(s){ s = Math.round(s); const h = Math.floor(s/3600), m = Math.floor(s%3600/60);
+  return h ? h + 'h ' + m + 'm' : m ? m + 'm ' + (s%60) + 's' : s + 's'; }
+function save(){ S.last = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch(e){} }
+function load(){
+  try {
+    const raw = localStorage.getItem(SAVE_KEY); if (!raw) return false;
+    const d = JSON.parse(raw), f = fresh();
+    S = Object.assign(f, d);
+    S.st = fresh().st; ORDER.forEach(id => Object.assign(S.st[id], (d.st || {})[id] || {}));
+    S.inv = Object.assign(fresh().inv, d.inv || {});
+    return true;
+  } catch(e){ return false; }
+}
+
+/* expose logic for headless balance tests */
+const API = {get S(){return S;}, set S(v){S=v;}, fresh, step, tapStation, buyLevel, hireStaff, hireSupervisor, buyVessel, buyQuality,
+  buyIsland, income, qty, dur, lvlCost, bulk, offlineEarnings, unlocked, DEF, ORDER, VESSELS, QUALITY_COST, SUPERVISOR, ISLAND_PRICE,
+  BROTH_PER_RIHA, setNow(f){ now = f; }};
+if (typeof window !== 'undefined') window.__MFT = API; else globalThis.__MFT = API;
+
+/* =====================================================================
+   UI
+   ===================================================================== */
+if (typeof document !== 'undefined') (function(){
+  const $ = id => document.getElementById(id);
+  const cache = {};
+  function set(id, v){ if (cache[id] !== v){ cache[id] = v; $(id).textContent = v; } }
+  let tab = 'island', resetArmed = 0;
+
+  toast = msg => { if (!msg) return; const d = document.createElement('div'); d.textContent = msg; const t = $('toast');
+    while (t.children.length > 2) t.removeChild(t.firstChild); t.appendChild(d); setTimeout(() => d.remove(), 2600); };
+  let lastFly = 0;
+  onSale = v => { const t = performance.now(); if (t - lastFly < 350 || tab !== 'island') return; lastFly = t;
+    const f = document.createElement('div'); f.className = 'fly'; f.textContent = '+' + fmt(v); $('app').appendChild(f); setTimeout(() => f.remove(), 900); };
+
+  /* --- station cards: built once, updated every frame --- */
+  function flow(id){
+    const q = fmt(qty(id)), sells = id === 'smoke' || id === 'pot' || !unlocked(ORDER[ORDER.indexOf(id) + 1]);
+    const tail = sells ? ' · sells ' + fmt(DEF[id].val * priceMult()) + ' rf each' : '';
+    if (id === 'dhoni') return '+' + q + ' raw tuna' + tail;
+    if (id === 'cut')   return q + ' tuna → ' + q + ' loins' + tail;
+    if (id === 'smoke') return q + ' loins → Valhoamas' + tail;
+    return fmt(qty(id) * BROTH_PER_RIHA) + ' broth → ' + q + ' jars' + tail;
+  }
+  $('cards').innerHTML = ORDER.map(id =>
+    '<div class="card" id="c-' + id + '">' +
+      '<button class="tap" data-a="tap" data-v="' + id + '"><div class="ico">' + DEF[id].ico + '</div><div class="info">' +
+        '<div class="nm">' + DEF[id].n + ' <span class="lv" id="lv-' + id + '"></span><span class="auto">AUTO</span></div>' +
+        '<div class="flow" id="fl-' + id + '"></div><div class="bar"><i id="b-' + id + '"></i></div></div></button>' +
+      '<button class="up" data-a="up" data-v="' + id + '"><small id="ul-' + id + '"></small><b id="uc-' + id + '"></b><em id="um-' + id + '"></em></button>' +
+    '</div>').join('');
+
+  function row(ico, title, desc, btn){ return '<div class="row"><div class="ico">' + ico + '</div><div class="tx"><b>' + title + '</b><span>' + desc + '</span></div>' + btn + '</div>'; }
+  function buyBtn(a, v, cost, cur, label, cls){
+    return '<button class="btn ' + (cls || '') + '" data-a="' + a + '" data-v="' + v + '" data-cost="' + cost + '" data-cur="' + cur + '">' + label + '</button>'; }
+  const doneBtn = t => '<button class="btn done">' + t + '</button>';
+
+  function renderPanels(){
+    /* GOAL CARD (island tab) */
+    $('goalcard').innerHTML = S.won
+      ? '<div class="isl">🏭🏝️</div><h3>Industrial island acquired</h3><p>Stage 2 (Industrial Processing Hub) is not in this test build. Stage 1 keeps running so you can keep testing balance.</p>'
+      : '<div class="isl">🏭🏝️</div><h3>Buy the industrial island</h3><p>Reach ' + fmt(ISLAND_PRICE) + ' rf to purchase the neighbouring island and unlock Stage 2.</p>' +
+        '<button class="btn wide" data-a="island" data-cost="' + ISLAND_PRICE + '" data-cur="mvr">Buy island · ' + fmt(ISLAND_PRICE) + ' rf</button>';
+
+    /* UPGRADES */
+    const nv = VESSELS[S.vessel + 1], qc = QUALITY_COST[S.quality];
+    let h = '<h2>Vessels</h2>' + row('⛵', nv ? nv.n : VESSELS[S.vessel].n,
+      nv ? 'Catch x' + (nv.m / VESSELS[S.vessel].m) + '. Current: ' + VESSELS[S.vessel].n + '.' : 'Best Stage 1 vessel. Commercial harvesters arrive in Stage 2.',
+      nv ? buyBtn('vessel', '', nv.cost, 'mvr', fmt(nv.cost) + ' rf') : doneBtn('Owned'));
+    h += '<h2>Quality</h2>' + row('⭐', 'Artisan quality ' + S.quality + '/' + QUALITY_COST.length, 'Coconut-husk smoking and better jars. All sale prices x1.5 per tier.',
+      qc !== undefined ? buyBtn('quality', '', qc, 'mvr', fmt(qc) + ' rf') : doneBtn('Max'));
+    h += '<h2>Station levels</h2><p class="note">Level stations on the Island tab. Each level adds one unit per cycle; output doubles every ' + MILE_STEP + ' levels and pays ' + MILE_PEARLS + ' pearls.</p>';
+    $('p-upgrades').innerHTML = h;
+
+    /* STAFF */
+    h = '<h2>Station staff</h2><p class="note">Staff run a station for you. No tapping needed.</p>';
+    ORDER.forEach(id => { const s = S.st[id], d = DEF[id];
+      h += row(d.ico, d.supN, 'Automates ' + d.n + '.',
+        s.auto ? doneBtn('Hired') : s.lvl < 1 ? doneBtn('Locked') : buyBtn('sup', id, d.sup, 'mvr', fmt(d.sup) + ' rf')); });
+    h += '<h2>Management</h2>' + row('📋', SUPERVISOR.n, '+25% island production speed and 2-hour offline earnings.',
+      S.supervisor ? doneBtn('Hired') : buyBtn('mgr', '', SUPERVISOR.cost, 'mvr', fmt(SUPERVISOR.cost) + ' rf'));
+    $('p-staff').innerHTML = h;
+
+    /* SHOP */
+    h = '<h2>Premium offers</h2>';
+    h += row('🌟', 'Golden Maldivian Dhoni', 'Permanent x2 catch yield in Stage 1.', S.golden ? doneBtn('Owned') : buyBtn('golden', '', SHOP.golden, 'pearls', '💎 ' + SHOP.golden, 'pearl'));
+    h += row('📦', 'Raw Material Crate', 'Instantly adds ' + SHOP.crateUnits + ' raw tuna.', buyBtn('crate', '', SHOP.crate, 'pearls', '💎 ' + SHOP.crate, 'pearl'));
+    h += row('⏩', '2-Hour Time Warp', 'Instant +' + fmt(warpValue(2)) + ' rf (2h of idle revenue).', buyBtn('warp', 2, SHOP.warp2, 'pearls', '💎 ' + SHOP.warp2, 'pearl'));
+    h += row('⏩', '24-Hour Time Warp', 'Instant +' + fmt(warpValue(24)) + ' rf (24h of idle revenue).', buyBtn('warp', 24, SHOP.warp24, 'pearls', '💎 ' + SHOP.warp24, 'pearl'));
+    h += '<h2>Free boost</h2>' + row('🌶️', 'Lonumirus spice rush', 'All stations x2 speed for ' + BOOST_SECS + 's. Rewarded ad (simulated).', '<button class="btn ad" data-a="adBoost" id="adBtn">▶ Watch</button>');
+    h += '<h2>Pearl store</h2><p class="note">Test build: purchases are simulated and free, so you can try every offer.</p>';
+    BUNDLES.forEach(b => { h += row('💎', fmt(b[0]) + ' Pearls', 'Store price ' + b[1] + ' rf.', '<button class="btn pearl" data-a="iap" data-v="' + b[0] + '">Get (test)</button>'); });
+    $('p-shop').innerHTML = h;
+    dirty = false;
+  }
+
+  /* --- per-frame refresh --- */
+  function hint(){
+    const st = S.st, I = S.inv;
+    if (S.won) return 'Stage 1 complete. The island keeps earning.';
+    if (S.trips === 0 && !st.dhoni.run) return '👆 Tap the Dhoni to go pole-and-line fishing.';
+    if (S.trips === 0) return 'Keep tapping to row faster. Every tap speeds a station up.';
+    if (!unlocked('cut')) return 'Raw tuna sells for ' + DEF.dhoni.val + ' rf. Save ' + DEF.cut.unlock + ' rf to unlock the Cutting Station.';
+    if (!st.dhoni.auto) return S.mvr >= DEF.dhoni.sup ? '👨‍🍳 Open Staff and hire a Dhoni Captain.' : 'Tap Cutting when tuna lands. A Dhoni Captain (' + DEF.dhoni.sup + ' rf) automates fishing.';
+    if (!unlocked('smoke')) return 'Loins sell for ' + DEF.cut.val + ' rf. Valhoamas sells for ' + DEF.smoke.val + '. Unlock Smoking at ' + fmt(DEF.smoke.unlock) + ' rf.';
+    const idle = ORDER.find(id => unlocked(id) && !st[id].auto);
+    if (idle && S.mvr >= DEF[idle].sup) return '👨‍🍳 You can afford a ' + DEF[idle].supN + '. Open Staff.';
+    if (!unlocked('pot')) return 'Smoking leaves tuna broth. Unlock Simmering (' + fmt(DEF.pot.unlock) + ' rf) to turn it into Rihaakuru.';
+    if (I.tuna > qty('cut') * 5) return 'Raw tuna is piling up. Upgrade the Cutting Station.';
+    if (I.loin > qty('smoke') * 5) return 'Loins are piling up. Upgrade Smoking.';
+    if (I.broth > qty('pot') * BROTH_PER_RIHA * 5) return 'Broth is piling up. Upgrade Simmering.';
+    if (idle) return 'Hire a ' + DEF[idle].supN + ' (' + fmt(DEF[idle].sup) + ' rf) to automate ' + DEF[idle].n + '.';
+    return 'Goal: ' + fmt(ISLAND_PRICE) + ' rf to buy the industrial island.';
+  }
+  let slow = 0;
+  function refresh(){
+    set('h-mvr', fmt(S.mvr)); set('h-pearl', fmt(S.pearls)); set('h-rate', fmt(income(true)));
+    const bs = Math.ceil((S.boostUntil - now()) / 1000);
+    $('h-boost').classList.toggle('on', bs > 0); if (bs > 0) set('h-boost', '🌶️ x2 ' + bs + 's');
+    if (tab === 'island'){
+      set('i-tuna', fmt(S.inv.tuna)); set('i-loin', fmt(S.inv.loin)); set('i-broth', fmt(S.inv.broth)); set('i-sold', fmt(S.sold));
+      const d = S.st.dhoni, p = d.run ? Math.min(1, d.prog) : 0, x = 1 - Math.abs(1 - 2 * p);
+      $('boat').style.transform = 'translateX(' + (44 + x * (Math.min(460, innerWidth) - 130)) + 'px) scaleX(' + (p > 0.5 ? -1 : 1) + ')';
+      ORDER.forEach(id => {
+        const s = S.st[id], c = $('c-' + id);
+        c.classList.toggle('auto', s.auto); c.classList.toggle('locked', s.lvl < 1); c.classList.toggle('idle', !s.run);
+        $('b-' + id).style.width = (s.run ? Math.min(100, s.prog * 100) : 0) + '%';
+        if (s.lvl < 1){
+          set('lv-' + id, 'LOCKED'); set('fl-' + id, 'Makes ' + DEF[id].out + ' worth ' + DEF[id].val + ' rf each');
+          set('ul-' + id, 'Unlock'); set('uc-' + id, fmt(DEF[id].unlock)); set('um-' + id, 'rf');
+          c.lastChild.classList.toggle('no', S.mvr < DEF[id].unlock);
+        } else {
+          const b = bulk(id);
+          set('lv-' + id, 'Lv ' + s.lvl); set('fl-' + id, flow(id) + ' · ' + dur(id).toFixed(1) + 's');
+          set('ul-' + id, 'Upgrade x' + b.n); set('uc-' + id, fmt(b.cost)); set('um-' + id, 'x2 at Lv ' + nextMile(s.lvl));
+          c.lastChild.classList.toggle('no', S.mvr < b.cost);
+        }
+      });
+    }
+    if (++slow % 12 === 0){
+      const cur = {mvr:S.mvr, pearls:S.pearls};
+      document.querySelectorAll('.panel.on [data-cost]').forEach(b => b.classList.toggle('no', cur[b.dataset.cur] < +b.dataset.cost));
+      set('h-hint', hint());
+      $('h-goal').style.width = (S.won ? 100 : Math.min(100, S.mvr / ISLAND_PRICE * 100)) + '%';
+      set('h-goaltx', S.won ? 'Stage 2 unlocked' : 'Goal ' + fmt(S.mvr) + ' / ' + fmt(ISLAND_PRICE) + ' rf');
+      if (tab === 'shop'){ const a = $('adBtn'); if (a){ const w = Math.max(0, Math.ceil((S.adReadyAt - now()) / 1000)); a.textContent = w ? fmtTime(w) : '▶ Watch'; a.classList.toggle('no', w > 0); } }
+      const navs = document.querySelectorAll('nav button');
+      navs[1].classList.toggle('alert', tab !== 'upgrades' && ((VESSELS[S.vessel+1] && S.mvr >= VESSELS[S.vessel+1].cost) || (QUALITY_COST[S.quality] !== undefined && S.mvr >= QUALITY_COST[S.quality])));
+      navs[2].classList.toggle('alert', tab !== 'staff' && (ORDER.some(id => unlocked(id) && !S.st[id].auto && S.mvr >= DEF[id].sup) || (!S.supervisor && S.mvr >= SUPERVISOR.cost)));
+    }
+  }
+
+  /* --- modal helpers --- */
+  function modal(html){ $('mbox').innerHTML = html; $('modal').classList.add('on'); }
+  function closeModal(){ $('modal').classList.remove('on'); }
+  function showAd(done){ // simulated rewarded video
+    let n = 3; modal('<div class="e">📺</div><h3>Rewarded ad (simulated)</h3><p>A real build plays a video here.</p><div class="amt" id="adN">3</div>');
+    const iv = setInterval(() => { n--; const e = $('adN'); if (e) e.textContent = n; if (n <= 0){ clearInterval(iv); closeModal(); done(); } }, 1000);
+  }
+  let pendingOffline = 0;
+  function welcomeBack(secs){
+    const v = offlineEarnings(secs);
+    if (v > 0){ pendingOffline = v;
+      modal('<div class="e">🌙</div><h3>Welcome back</h3><p>Your crew worked for ' + fmtTime(Math.min(secs, SUPERVISOR.offlineCap)) + ' while you were away.</p><div class="amt">+' + fmt(v) + ' rf</div>' +
+        '<button class="btn ad wide" data-a="offAd">▶ Watch ad: collect x2</button><button class="btn wide" data-a="offCollect">Collect</button>');
+    } else if (secs >= OFFLINE_MIN && !S.supervisor && S.sold > 0) toast('Hire the Island Supervisor to earn while you are away.');
+  }
+  function winModal(){ modal('<div class="e">🏭🎉</div><h3>Island acquired!</h3><p>You bought the industrial island. Stage 2, the Industrial Processing Hub, starts here in the full game.</p><button class="btn wide" data-a="close">Keep playing Stage 1</button>'); }
+  function settingsModal(){ resetArmed = 0;
+    modal('<div class="e">⚙️</div><h3>Stats and save</h3><div class="stats">Lifetime earnings <b>' + fmt(S.total) + ' rf</b><br>Fishing trips <b>' + fmt(S.trips) + '</b><br>Units sold <b>' + fmt(S.sold) + '</b><br>Idle income <b>' + fmt(income(true, true)) + ' rf/s</b><br>Full-chain income <b>' + fmt(income(false, true)) + ' rf/s</b></div>' +
+      '<p>Progress saves in this browser every 10 seconds.</p><button class="btn wide" data-a="close">Close</button><button class="btn done wide" data-a="reset">Reset progress</button>'); }
+
+  /* --- input --- */
+  function switchTab(t){ tab = t; document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
+    document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.v === t)); renderPanels(); slow = 11; }
+  function syncMode(){ document.querySelectorAll('#modes button').forEach(x => x.classList.toggle('on', x.dataset.v === String(S.mode))); }
+  const poor = cur => toast(cur === 'pearls' ? 'Not enough pearls.' : 'Not enough rf yet.');
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    const a = b.dataset.a, v = b.dataset.v;
+    switch (a){
+      case 'tap': tapStation(v); break;
+      case 'up': if (!buyLevel(v) && S.st[v].lvl > 0) poor(); break;
+      case 'mode': S.mode = v; syncMode(); break;
+      case 'tab': switchTab(v); break;
+      case 'sup': hireStaff(v) || poor(); break;
+      case 'mgr': hireSupervisor() || poor(); break;
+      case 'vessel': buyVessel() || poor(); break;
+      case 'quality': buyQuality() || poor(); break;
+      case 'golden': buyGolden() || poor('pearls'); break;
+      case 'crate': buyCrate() || poor('pearls'); break;
+      case 'warp': if (S.pearls < (+v === 2 ? SHOP.warp2 : SHOP.warp24)) poor('pearls'); else buyWarp(v); break;
+      case 'adBoost': if (now() < S.adReadyAt) toast('Next spice rush in ' + fmtTime((S.adReadyAt - now()) / 1000)); else showAd(() => { startBoost(); toast('🌶️ Spice rush! x2 speed for ' + BOOST_SECS + 's'); }); break;
+      case 'iap': S.pearls += +v; dirty = true; toast('+' + v + ' pearls (test purchase)'); break;
+      case 'island': if (buyIsland()) winModal(); else toast('You need ' + fmt(ISLAND_PRICE) + ' rf.'); break;
+      case 'offCollect': S.mvr += pendingOffline; S.total += pendingOffline; pendingOffline = 0; closeModal(); break;
+      case 'offAd': { const p = pendingOffline * 2; pendingOffline = 0; showAd(() => { S.mvr += p; S.total += p; toast('+' + fmt(p) + ' rf'); }); break; }
+      case 'settings': settingsModal(); break;
+      case 'close': closeModal(); break;
+      case 'reset':
+        if (resetArmed){ S = fresh(); resetArmed = 0; save(); closeModal(); switchTab('island'); syncMode(); toast('Progress reset.'); }
+        else { resetArmed = 1; b.textContent = 'Tap again to erase everything'; }
+        break;
+    }
+    if (dirty) renderPanels();
+  });
+
+  /* --- main loop --- */
+  let last = performance.now();
+  function frame(t){
+    let dt = (t - last) / 1000; last = t;
+    if (dt > OFFLINE_MIN){ welcomeBack(dt); dt = 0; }   // tab was hidden for a while
+    dt = Math.min(dt, 30);
+    while (dt > 0){ const d = Math.min(0.1, dt); step(d); dt -= d; }
+    refresh();
+    requestAnimationFrame(frame);
+  }
+  const had = load();
+  syncMode(); renderPanels();
+  if (had) welcomeBack((Date.now() - S.last) / 1000);
+  setInterval(save, 10000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+  window.addEventListener('pagehide', save);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
